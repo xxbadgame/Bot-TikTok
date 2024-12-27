@@ -31,4 +31,6 @@ class Config:
     def cookies_dir(self):
         return self.get_option_by_name("COOKIES_DIR")
 
-                
+    @property
+    def videos_dir(self):
+        return self.get_option_by_name("VIDEOS_DIR")

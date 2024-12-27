@@ -1,4 +1,4 @@
-import string, secrets
+import string, secrets, subprocess, zlib
 
 def generate_random_string(length, underline):
     characters = (
@@ -26,3 +26,12 @@ def convert_tags(text, session):
 	end = 0
 	i = -1
 	text_extra = []
+      
+def subprocess_jsvmp(js, user_agent, url):
+	proc = subprocess.Popen(['node', js, url, user_agent], stdout=subprocess.PIPE)
+	return proc.stdout.read().decode('utf-8')
+
+def crc32(content):
+	prev = 0
+	prev = zlib.crc32(content, prev)
+	return ("%X" % (prev & 0xFFFFFFFF)).lower().zfill(8)

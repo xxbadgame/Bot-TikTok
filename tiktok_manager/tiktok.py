@@ -1,9 +1,11 @@
-import os, sys, requests
+import os, sys, requests, json, uuid
+from .Config import Config
 from dotenv import load_dotenv
 from tiktok_manager.Browser import Browser
 from tiktok_manager.cookies import load_cookies_from_file
 from .eprint import eprint
 import bot_utils
+from requests_auth_aws_sigv4 import AWSSigV4
 from fake_useragent import FakeUserAgentError, UserAgent
 
 load_dotenv()
@@ -93,9 +95,9 @@ def upload_video(session_user, video, title):
     url = f"https://{upload_host}/{store_uri}?uploadID={upload_id}&phase=finish&uploadmode=part"
 
     headers = {
-		"Authorization": video_auth,
-		"Content-Type": "text/plain;charset=UTF-8",
-	}
+        "Authorization": video_auth,
+        "Content-Type": "text/plain;charset=UTF-8",
+    }
 
     # ApplyUploadInner
     url = f"https://www.tiktok.com/top/v1?Action=CommitUploadInner&Version=2020-11-19&SpaceName=tiktok"
@@ -167,14 +169,108 @@ def upload_video(session_user, video, title):
         ],
     }
 
+    # signature and post
     uploaded = False
     while True:
         mstoken = session.cookies.get("msToken")
+        js_path = os.path.join(os.getcwd(), "tiktok_manager", "tiktok-signature", "browser.js")
+        sig_url = f"https://www.tiktok.com/api/v1/web/project/post/?app_name=tiktok_web&channel=tiktok_web&device_platform=web&aid=1988&msToken={mstoken}"
+        # to create signature (_signature & X-Bogus) with js script we need : url project to sign, js script path and user agent
+        signatures = bot_utils.subprocess_jsvmp(js_path, user_agent, sig_url)
+        if signatures is None:
+            print("[-] Failed to generate signatures")
+            return False
         
+        try:
+            tt_output = json.loads(signatures)["data"]
+        except (json.JSONDecodeError, KeyError) as e:
+            print(f"[-] Failed to parse signature data: {str(e)}")
+            return False
 
+        project_post_dict = {
+            "app_name": "tiktok_web",
+            "channel": "tiktok_web",
+            "device_platform": "web",
+            "aid": 1988,
+            "msToken": mstoken,
+            "X-Bogus": tt_output["x-bogus"],
+            "_signature": tt_output["signature"],
+        }
 
-def upload_to_tiktok():
-    pass
+        url = f"https://www.tiktok.com/tiktok/web/project/post/v1/"
+        r = session.request("POST", url, params=project_post_dict, data=json.dumps(data), headers=headers)
+        
+        if not bot_utils.assert_success(url, r):
+            print("[-] Published failed, try later again")
+            bot_utils.print_error(url, r)
+            return False
+        
+        if r.json()["status_code"] == 0:
+            print(f"Published successfully")
+            uploaded = True
+            break
+        else:
+            print("[-] Publish failed to Tiktok, trying again...")
+            bot_utils.print_error(url, r)
+            return False
+    
+    if not uploaded:
+        print("[-] Could not upload video")
+        return False
+
+def upload_to_tiktok(video_file, session):
+    url = "https://www.tiktok.com/api/v1/video/upload/auth/?aid=1988"
+    r = session.get(url)
+    if not bot_utils.assert_success(url, r):
+        return False
+    
+    aws_auth = AWSSigV4(
+        "vod",
+        region="ap-singapore-1",
+        aws_access_key_id=r.json()["video_token_v5"]["access_key_id"],
+        aws_secret_access_key=r.json()["video_token_v5"]["secret_acess_key"],
+        aws_session_token=r.json()["video_token_v5"]["session_token"],
+    )
+
+    with open(os.path.join(os.getcwd(), Config.get().videos_dir, video_file), "rb") as f:
+        video_content = f.read()
+        file_size = len(video_content)
+        url = f"https://www.tiktok.com/top/v1?Action=ApplyUploadInner&Version=2020-11-19&SpaceName=tiktok&FileType=video&IsInner=1&FileSize={file_size}&s=g158iqx8434"
+
+    r = session.get(url, auth=aws_auth)
+    if not bot_utils.assert_success(url, r):
+        return False
+
+    # chunks upload
+    upload_node = r.json()["Result"]["InnerUploadAddress"]["UploadNodes"][0]
+    video_id = upload_node["Vid"]
+    store_uri = upload_node["StoreInfos"][0]["StoreUri"]
+    video_auth = upload_node["StoreInfos"][0]["Auth"]
+    upload_host = upload_node["UploadHost"]
+    session_key = upload_node["SessionKey"]
+    chunk_size = 5242880
+    chunks = []
+    i = 0
+    while i < file_size:
+        chunks.append(video_content[i: i + chunk_size])
+        i += chunk_size
+    crcs = []
+    upload_id = str(uuid.uuid4())
+    for i in range(len(chunks)):
+        chunk = chunks[i]
+        crc = bot_utils.crc32(chunk)
+        crcs.append(crc)
+        url = f"https://{upload_host}/{store_uri}?partNumber={i + 1}&uploadID={upload_id}&phase=transfer"
+        headers = {
+            "Authorization": video_auth,
+            "Content-Type": "application/octet-stream",
+            "Content-Disposition": 'attachment; filename="undefined"',
+            "Content-Crc32": crc,
+        }
+
+        r = session.post(url, headers=headers, data=chunk)
+
+    return video_id, session_key, upload_id, crcs, upload_host, store_uri, video_auth, aws_auth
 
 if __name__ == 'main':
     login("test")
