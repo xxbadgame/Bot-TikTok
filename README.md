@@ -25,10 +25,3 @@ inspired by https://github.com/makiisthenes.
 ### Notes and Terms⌛
 
 I am not responsible for any effects to your account, usage of such tools may ban your account. Please use at your own risk. 
-
-
-----
-
-## Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=makiisthenes/TiktokAutoUploader&type=Date)](https://star-history.com/#makiisthenes/TiktokAutoUploader&Date)
