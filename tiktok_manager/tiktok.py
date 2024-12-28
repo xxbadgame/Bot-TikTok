@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from tiktok_manager.Browser import Browser
 from tiktok_manager.cookies import load_cookies_from_file
 from .eprint import eprint
-import bot_utils
+from .bot_utils import *
 from requests_auth_aws_sigv4 import AWSSigV4
 from fake_useragent import FakeUserAgentError, UserAgent
 
@@ -42,7 +42,6 @@ def login(login_name: str):
 
 # Préparation de la session
 def upload_video(session_user, video, title):
-    # worth it ?
     try:
         user_agent = UserAgent().random
     except FakeUserAgentError as e:
@@ -51,8 +50,8 @@ def upload_video(session_user, video, title):
 
     # Create whole session to request TikTok server
     cookies = load_cookies_from_file(f"tiktok_session-{session_user}")
-    session_id = next((c for c in cookies if c["name"] == 'sessionid'), None)
-    dc_id = next((c for c in cookies if c["name"] == 'tt-target-idc'), None)
+    session_id = next((c["value"] for c in cookies if c["name"] == 'sessionid'), None)
+    dc_id = next((c["value"] for c in cookies if c["name"] == 'tt-target-idc'), None)
     
     if not session_id:
         eprint("No cookie with Tiktok session id found: use login to save session id")
@@ -61,16 +60,18 @@ def upload_video(session_user, video, title):
         print("[WARNING]: Please login, tiktok datacenter id must be allocated, or may fail")
         dc_id = "useast2a"
 
-    print("User successfully logged in.")
+    print(f"User successfully logged in : {session_id}")
     print(f"Tiktok Datacenter Assigned: {dc_id}")
     print("Uploading video...")
     if len(title) > 2200:
         print("[-] The title has to be less than 2200 characters")
         return False
+    else :
+        print(f"Video title : {title}")
     
     session = requests.Session()
-    session.cookies.set("sessionid", session_id, domain=".tiktok")
-    session.cookies.set("tt-target-idc", session_id, domain=".tiktok")
+    session.cookies.set("sessionid", session_id, domain=".tiktok.com")
+    session.cookies.set("tt-target-idc", dc_id, domain=".tiktok.com")
     session.verify = True
 
     headers = {
@@ -81,11 +82,13 @@ def upload_video(session_user, video, title):
 
 
     # create project
-    creation_id = bot_utils.generate_random_string(21, True)
+    creation_id = generate_random_string(21, True)
     project_url = f"https://www.tiktok.com/api/v1/web/project/create/?creation_id={creation_id}&type=1&aid=1988"
     r = session.post(project_url)
-
-    if bot_utils.assert_success(project_url, r):
+    
+    if r.status_code != 200:
+        print(f"Error creating project: {r.status_code}")
+        print(r.text)
         return False
 
     # get project id
@@ -98,15 +101,17 @@ def upload_video(session_user, video, title):
         "Authorization": video_auth,
         "Content-Type": "text/plain;charset=UTF-8",
     }
+    data = ",".join([f"{i + 1}:{crcs[i]}" for i in range(len(crcs))])
+
+    r = requests.post(url, headers=headers, data=data)
+    if not assert_success(url, r):
+        return False
 
     # ApplyUploadInner
     url = f"https://www.tiktok.com/top/v1?Action=CommitUploadInner&Version=2020-11-19&SpaceName=tiktok"
     data = '{"SessionKey":"' + session_key + '","Functions":[{"name":"GetMeta"}]}'
 
     r = session.post(url, auth=aws_auth, data=data)
-    if not bot_utils.assert_success(url, r):
-        return False
-
 
     # publish video
     url = "https://www.tiktok.com"
@@ -115,59 +120,21 @@ def upload_video(session_user, video, title):
     }
 
     r = session.head(url, headers=headers)
-    if not bot_utils.assert_success(url, r):
+
+    if not assert_success(url, r):
         return False
+    
     headers = {
      "content-type": "application/json",
      "user-agent": user_agent
     }
+
     brand = ""
     if brand and brand[-1] == ",":
         brand = brand[:-1]
-    markup_text, text_extra = bot_utils.convert_tags(title, session)
+    markup_text, text_extra = convert_tags(title, session)
 
-    data = {
-        "post_common_info": {
-            "creation_id": creation_id,
-            "enter_post_page_from": 1,
-            "post_type": 3,
-        },
-        "feature_common_info_list": [
-            {
-                "geofencing_regions": [],
-                "playlist_name": "",
-                "playlist_id": "",
-                "tcm_params": '{"commerce_toggle_info":{}}',
-                "sound_exemption": 0,
-                "anchors": [],
-                "vedit_common_info": {"draft": "", "video_id": video_id},
-                "privacy_setting_info": {
-                    "visibility_type": 0,
-                    "allow_duet": 1,
-                    "allow_stitch": 1,
-                    "allow_comment": 1,
-                },
-                "content_check_id": "",
-            }
-        ],
-        "single_post_req_list": [
-            {
-                "batch_index": 0,
-                "video_id": video_id,
-                "is_long_video": 0,
-                "single_post_feature_info": {
-                    "text": title,
-                    "text_extra": text_extra,
-                    "markup_text": markup_text,
-                    "music_info": {},
-                    "poster_delay": 0,
-                    "cloud_edit_video_height": 2160,
-                    "cloud_edit_video_width": 1920,
-                    "cloud_edit_is_use_video_canvas": False,
-                },
-            }
-        ],
-    }
+    data = { "post_common_info": { "creation_id": creation_id, "enter_post_page_from": 1, "post_type": 3, }, "feature_common_info_list": [ { "geofencing_regions": [], "playlist_name": "", "playlist_id": "", "tcm_params": '{"commerce_toggle_info":{}}', "sound_exemption": 0, "anchors": [], "vedit_common_info": {"draft": "", "video_id": video_id}, "privacy_setting_info": { "visibility_type": 0, "allow_duet": 1, "allow_stitch": 1, "allow_comment": 1, }, "content_check_id": "", } ], "single_post_req_list": [ { "batch_index": 0, "video_id": video_id, "is_long_video": 0, "single_post_feature_info": { "text": title, "text_extra": text_extra, "markup_text": markup_text, "music_info": {}, "poster_delay": 0, "cloud_edit_video_height": 2160, "cloud_edit_video_width": 1920, "cloud_edit_is_use_video_canvas": False, }, } ], }
 
     # signature and post
     uploaded = False
@@ -176,7 +143,7 @@ def upload_video(session_user, video, title):
         js_path = os.path.join(os.getcwd(), "tiktok_manager", "tiktok-signature", "browser.js")
         sig_url = f"https://www.tiktok.com/api/v1/web/project/post/?app_name=tiktok_web&channel=tiktok_web&device_platform=web&aid=1988&msToken={mstoken}"
         # to create signature (_signature & X-Bogus) with js script we need : url project to sign, js script path and user agent
-        signatures = bot_utils.subprocess_jsvmp(js_path, user_agent, sig_url)
+        signatures = subprocess_jsvmp(js_path, user_agent, sig_url)
         if signatures is None:
             print("[-] Failed to generate signatures")
             return False
@@ -199,10 +166,10 @@ def upload_video(session_user, video, title):
 
         url = f"https://www.tiktok.com/tiktok/web/project/post/v1/"
         r = session.request("POST", url, params=project_post_dict, data=json.dumps(data), headers=headers)
-        
-        if not bot_utils.assert_success(url, r):
+
+        if not assert_success(url, r):
             print("[-] Published failed, try later again")
-            bot_utils.print_error(url, r)
+            print_error(url, r)
             return False
         
         if r.json()["status_code"] == 0:
@@ -211,17 +178,20 @@ def upload_video(session_user, video, title):
             break
         else:
             print("[-] Publish failed to Tiktok, trying again...")
-            bot_utils.print_error(url, r)
+            print_error(url, r)
             return False
     
     if not uploaded:
         print("[-] Could not upload video")
         return False
 
+
+
+
 def upload_to_tiktok(video_file, session):
     url = "https://www.tiktok.com/api/v1/video/upload/auth/?aid=1988"
     r = session.get(url)
-    if not bot_utils.assert_success(url, r):
+    if not assert_success(url, r):
         return False
     
     aws_auth = AWSSigV4(
@@ -238,7 +208,7 @@ def upload_to_tiktok(video_file, session):
         url = f"https://www.tiktok.com/top/v1?Action=ApplyUploadInner&Version=2020-11-19&SpaceName=tiktok&FileType=video&IsInner=1&FileSize={file_size}&s=g158iqx8434"
 
     r = session.get(url, auth=aws_auth)
-    if not bot_utils.assert_success(url, r):
+    if not assert_success(url, r):
         return False
 
     # chunks upload
@@ -258,7 +228,7 @@ def upload_to_tiktok(video_file, session):
     upload_id = str(uuid.uuid4())
     for i in range(len(chunks)):
         chunk = chunks[i]
-        crc = bot_utils.crc32(chunk)
+        crc = crc32(chunk)
         crcs.append(crc)
         url = f"https://{upload_host}/{store_uri}?partNumber={i + 1}&uploadID={upload_id}&phase=transfer"
         headers = {
@@ -272,6 +242,7 @@ def upload_to_tiktok(video_file, session):
 
     return video_id, session_key, upload_id, crcs, upload_host, store_uri, video_auth, aws_auth
 
-if __name__ == 'main':
-    login("test")
-    
+if __name__ == '__main__':
+    ms_token = ""
+    base_url = "https://www.tiktok.com/api/v1/web/project/post/"
+    url = f"?app_name=tiktok_web&channel=tiktok_web&device_platform=web&aid=1988&msToken={ms_token}"

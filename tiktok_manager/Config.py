@@ -1,3 +1,5 @@
+from .eprint import *
+
 class Config:
 
     _DEFAULT_OPTIONS = {

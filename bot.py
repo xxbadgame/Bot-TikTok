@@ -9,8 +9,9 @@
 	@xxbadgame.42student
 
 """
-
+import os
+from tiktok_manager.Config import Config
 from tiktok_manager import tiktok
 
 if __name__ == '__main__':
-    tiktok.login("test")
+    tiktok.upload_video("legend", os.path.join(os.getcwd(), Config.get().videos_dir, "sqz.mp4"),  "test-my-algo")
