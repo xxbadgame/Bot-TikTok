@@ -1,0 +1,6 @@
+.env
+.DS_Store
+myvenv
+node_modules
+VideosDirPath/*
+RawVideos/*
