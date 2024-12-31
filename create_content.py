@@ -1,4 +1,4 @@
-import requests
+import requests, moviepy
 import yt_dlp
 import re
 
@@ -36,19 +36,44 @@ def refresh_shorts_url(theme):
 
 def yt_dl(video_url):
     ydl_opts = {
-        'format': 'best',
+        'format': 'bestvideo+bestaudio/best',
         'outtmpl': 'VideosDirPath/%(title)s.%(ext)s',
+        'merge_output_format': 'mp4',
+        'postprocessors': [{
+            'key': 'FFmpegVideoConvertor',
+            'preferedformat': 'mp4'
+        }],
     }
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(video_url, download=True)
             video_title = info.get('title', 'Titre non disponible')
             video_ext = info.get('ext', 'Extension non disponible')
-            print("Téléchargement terminé !")
+            print("Download mp4 !")
             return video_title, video_ext
     except Exception as e:
-        print(f"Une erreur est survenue : {e}")
+        print(f"Error : {e}")
         return None
+    
+def edit_satisfaying(video1_path, video2_path):
+    # if not use
+    # edit with satisfying video
+    video_top = moviepy.VideoFileClip(video1_path)
+    video_bottom = moviepy.VideoFileClip(video2_path)
+
+    max_width = max(video_top.w, video_bottom.w)
+
+    video_top = video_top.resized(width=max_width)
+    video_bottom = video_bottom.resized(width=max_width)
+
+    total_height = 1920
+
+    video_top = video_top.with_position(("center", -50))
+    video_bottom = video_bottom.with_position(("center", video_top.h))
+
+    final_clip = moviepy.CompositeVideoClip([video_top, video_bottom], size=(max_width, total_height))
+    final_clip.write_videofile("VideosDirPath/edit.mp4", codec="libx264")
+    
 
 if __name__ == "__main__":
-    refresh_shorts_url("league of legends")
+    edit_satisfaying("VideosDirPath/The 1 BRAND MECHANIC that NOBODY USES! - League of Legends #shorts.mp4", "SatisfyingVideos/satis3.mp4")

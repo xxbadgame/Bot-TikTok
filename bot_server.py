@@ -10,10 +10,10 @@
 
 """
 
-import os, time
+import os, time, random
 from tiktok_uploader.Config import Config
 from tiktok_uploader import tiktok
-from yt_content import *
+from create_content import *
 from datetime import datetime
 
 if __name__ == '__main__':
@@ -27,7 +27,7 @@ if __name__ == '__main__':
         print(f"Time : {time_now}")
         time.sleep(1)
 
-        if time_now == "00:00:00" or time_now == "6:00:00" or time_now == "12:00:00" or time_now == "18:00:00":
+        if time_now == "00:00:00" or time_now == "6:00:00" or time_now == "11:00:00" or time_now == "17:00:00":
             refresh_shorts_url(theme)
 
         if time_now == "07:00:00" or time_now == "12:00:00" or time_now == "18:00:00":
@@ -44,7 +44,10 @@ if __name__ == '__main__':
                             print("Url not used")
                             print(l1)
                             video_title, video_ext = yt_dl(l1.strip())
-                            upload_name = f"{video_title}.{video_ext}"
+                            #files = [f for f in os.listdir("SatisfyingVideos") if os.path.isfile(os.path.join("SatisfyingVideos", f))]
+                            #edit_satisfaying(f"VideosDirPath/{video_title}.mp4", f"SatisfyingVideos/{random.choice(files)}")
+                            #upload_name = f"edit.mp4"
+                            upload_name = f"{video_title}.mp4"
                             tiktok.upload_video("legend", os.path.join(os.getcwd(), Config.get().videos_dir, upload_name), video_title)
                             with open("yt_urls/shorts_used.txt", "a", encoding="utf-8") as f:
                                 f.write(l1)
