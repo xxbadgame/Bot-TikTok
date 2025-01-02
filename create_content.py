@@ -56,24 +56,20 @@ def yt_dl(video_url):
         return None
     
 def edit_satisfaying(video1_path, video2_path):
-    # if not use
-    # edit with satisfying video
-    video_top = moviepy.VideoFileClip(video1_path)
-    video_bottom = moviepy.VideoFileClip(video2_path)
+    clip1 = moviepy.VideoFileClip(video1_path)
+    clip2 = moviepy.VideoFileClip(video2_path)
 
-    max_width = max(video_top.w, video_bottom.w)
+    min_duration = min(clip1.duration, clip2.duration)
 
-    video_top = video_top.resized(width=max_width)
-    video_bottom = video_bottom.resized(width=max_width)
+    clip1 = clip1.subclipped(0, min_duration)
+    clip2 = clip2.subclipped(0, min_duration)
+    
+    clip1 = clip1.resized(new_size=(540,1200))
+    clip2 = clip2.resized(new_size=(540,1200))
 
-    total_height = 1920
-
-    video_top = video_top.with_position(("center", -50))
-    video_bottom = video_bottom.with_position(("center", video_top.h))
-
-    final_clip = moviepy.CompositeVideoClip([video_top, video_bottom], size=(max_width, total_height))
+    final_clip = moviepy.clips_array([[clip1, clip2]])
     final_clip.write_videofile("VideosDirPath/edit.mp4", codec="libx264")
     
 
 if __name__ == "__main__":
-    edit_satisfaying("VideosDirPath/The 1 BRAND MECHANIC that NOBODY USES! - League of Legends #shorts.mp4", "SatisfyingVideos/satis3.mp4")
+    edit_satisfaying("VideosDirPath/Integrated Warmogs 🦍 - League of Legends #leagueoflegends #shorts #lol.mp4", "SatisfyingVideos/BEST ODDLY SATISFYING AND RELAXING VIDEO FOR STRESS RELIEF #239 ASMR #SHORTS.mp4")
