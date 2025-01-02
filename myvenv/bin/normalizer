@@ -1,4 +1,4 @@
-#!/Users/yannis/Documents/Bot-TikTok/myvenv/bin/python3.11
+#!/home/yannis/Documents/Bot-TikTok/myvenv/bin/python
 # -*- coding: utf-8 -*-
 import re
 import sys
