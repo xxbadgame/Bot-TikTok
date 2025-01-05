@@ -2,7 +2,7 @@ import requests, moviepy
 import yt_dlp
 import re
 
-def refresh_shorts_url(theme):
+def refresh_shorts_url(theme, username):
     theme_yt = theme.replace(" ", "+")
 
     response = requests.get(f"https://www.youtube.com/results?search_query=%23shorts+%2B+{theme_yt}")
@@ -13,13 +13,13 @@ def refresh_shorts_url(theme):
         shorts_urls = re.findall(r"/shorts/([a-zA-Z0-9_-]{11})", html_content)
 
         try:
-            with open(f"urls-shorts-{theme_yt}.txt", "r", encoding="utf-8") as file:
+            with open(f"yt_urls/{username}/{theme_yt}/urls-shorts-{theme_yt}.txt", "r", encoding="utf-8") as file:
                 existing_urls = file.readlines()
                 existing_urls = [url.strip() for url in existing_urls]
         except FileNotFoundError:
             existing_urls = []
 
-        with open(f"urls-shorts-{theme_yt}.txt", "a", encoding="utf-8") as file:
+        with open(f"yt_urls/{username}/{theme_yt}/urls-shorts-{theme_yt}.txt", "a", encoding="utf-8") as file:
             for video_id in shorts_urls:
                 complete_url = f"https://youtube.com/shorts/{video_id}"
 
@@ -29,9 +29,9 @@ def refresh_shorts_url(theme):
                     existing_urls.append(complete_url)
                 else:
                     print(f"URL déjà présente : {complete_url}")
-
     else:
         print(f"Erreur lors de la récupération de la page, code : {response.status_code}")
+
 
 
 def yt_dl(video_url):
@@ -68,8 +68,8 @@ def edit_satisfaying(video1_path, video2_path):
     clip2 = clip2.resized(new_size=(540,1200))
 
     final_clip = moviepy.clips_array([[clip1, clip2]])
-    final_clip.write_videofile("VideosDirPath/edit.mp4", codec="libx264")
+    final_clip.write_videofile("VideosDirPath/content_create.mp4", codec="libx264")
     
 
 if __name__ == "__main__":
-    edit_satisfaying("VideosDirPath/Integrated Warmogs 🦍 - League of Legends #leagueoflegends #shorts #lol.mp4", "SatisfyingVideos/BEST ODDLY SATISFYING AND RELAXING VIDEO FOR STRESS RELIEF #239 ASMR #SHORTS.mp4")
+    pass

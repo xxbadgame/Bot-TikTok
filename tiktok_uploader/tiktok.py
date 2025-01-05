@@ -243,6 +243,4 @@ def upload_to_tiktok(video_file, session):
     return video_id, session_key, upload_id, crcs, upload_host, store_uri, video_auth, aws_auth
 
 if __name__ == '__main__':
-    ms_token = ""
-    base_url = "https://www.tiktok.com/api/v1/web/project/post/"
-    url = f"?app_name=tiktok_web&channel=tiktok_web&device_platform=web&aid=1988&msToken={ms_token}"
+    pass
