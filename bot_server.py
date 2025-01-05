@@ -94,7 +94,7 @@ if __name__ == '__main__':
     username = "crypto_challenger"
     
     create_files_data(theme, username)
-    
+    #while
     while True:
         publish = False
         time_now = datetime.now().strftime("%H:%M:%S")
