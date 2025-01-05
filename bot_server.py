@@ -66,7 +66,7 @@ def edit_and_post_videos(theme, username, satisfying):
                     if satisfying:
                         files = [f for f in os.listdir("SatisfyingVideos") if os.path.isfile(os.path.join("SatisfyingVideos", f))]
                         edit_satisfaying(f"VideosDirPath/{video_title}.mp4", f"SatisfyingVideos/{random.choice(files)}")
-                        video_to_upload = f"content_create_satisfying.mp4"
+                        video_to_upload = f"content_create.mp4"
                     else:
                         video_to_upload = f"{video_title}.mp4"
 
@@ -87,10 +87,11 @@ def edit_and_post_videos(theme, username, satisfying):
 
 if __name__ == '__main__':
 
-    #tiktok.login("crypto_lover")
+    tiktok.login("crypto_challenger")
 
+    
     theme = "crypto"
-    username = "crypto_lover"
+    username = "crypto_challenger"
     
     create_files_data(theme, username)
     
@@ -104,4 +105,4 @@ if __name__ == '__main__':
             refresh_shorts_url(theme, username)
 
         if time_now == "07:00:00" or time_now == "12:00:00" or time_now == "18:00:00":
-            edit_and_post_videos(theme, username, False)
+            edit_and_post_videos(theme, username, True)
