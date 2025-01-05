@@ -101,7 +101,7 @@ if __name__ == '__main__':
         time.sleep(1)
 
         if time_now == "00:00:00" or time_now == "6:00:00" or time_now == "11:00:00" or time_now == "17:00:00":
-            refresh_shorts_url(theme)
+            refresh_shorts_url(theme, username)
 
         if time_now == "07:00:00" or time_now == "12:00:00" or time_now == "18:00:00":
-            edit_and_post_videos(theme, username)
+            edit_and_post_videos(theme, username, False)
