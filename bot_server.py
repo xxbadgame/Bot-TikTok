@@ -10,7 +10,7 @@
 
 
 
-import os, time, random
+import os, time, random, unicodedata
 from tiktok_uploader.Config import Config
 from tiktok_uploader import tiktok
 from create_content import *
@@ -42,7 +42,18 @@ def create_files_data(theme, username):
     else:
         print(f"{path_used} existe déjà.")
 
-
+def clean_str(str):
+    # Normaliser les caractères pour supprimer les accents
+    chaine = unicodedata.normalize('NFD', chaine)
+    chaine = ''.join(c for c in chaine if unicodedata.category(c) != 'Mn')
+    
+    # Enlever les caractères spéciaux non désirés (garder lettres, chiffres et espaces)
+    chaine = re.sub(r'[^a-zA-Z0-9\s]', '', chaine)
+    
+    # Supprimer les espaces superflus
+    chaine = re.sub(r'\s+', ' ', chaine).strip()
+    
+    return chaine
 
 def edit_and_post_videos(theme, username, satisfying):
 
@@ -62,15 +73,19 @@ def edit_and_post_videos(theme, username, satisfying):
                     print("Url not used")
                     print(l1)
                     video_title, _ = yt_dl(l1.strip())
+                    video_title = clean_str(video_title); 
 
-                    if satisfying:
-                        files = [f for f in os.listdir("SatisfyingVideos") if os.path.isfile(os.path.join("SatisfyingVideos", f))]
-                        edit_satisfaying(f"VideosDirPath/{video_title}.mp4", f"SatisfyingVideos/{random.choice(files)}")
-                        video_to_upload = f"content_create.mp4"
-                    else:
-                        video_to_upload = f"{video_title}.mp4"
+                    try:
+                        if satisfying:
+                            files = [f for f in os.listdir("SatisfyingVideos") if os.path.isfile(os.path.join("SatisfyingVideos", f))]
+                            edit_satisfaying(f"VideosDirPath/{video_title}.mp4", f"SatisfyingVideos/{random.choice(files)}")
+                            video_to_upload = f"content_create.mp4"
+                        else:
+                            video_to_upload = f"{video_title}.mp4"
 
-                    tiktok.upload_video(username, os.path.join(os.getcwd(), Config.get().videos_dir, video_to_upload), video_title)
+                        tiktok.upload_video(username, os.path.join(os.getcwd(), Config.get().videos_dir, video_to_upload), video_title)
+                    except:
+                        pass
 
                     with open(f"yt_urls/{username}/{theme_yt}/shorts_used.txt", "a", encoding="utf-8") as f:
                         f.write(l1)
