@@ -1,6 +1,7 @@
 import requests, moviepy
 import yt_dlp
 import re
+from utils import *
 
 def refresh_shorts_url(theme, username):
     theme_yt = theme.replace(" ", "+")
@@ -32,12 +33,13 @@ def refresh_shorts_url(theme, username):
     else:
         print(f"Erreur lors de la récupération de la page, code : {response.status_code}")
 
-
+def clean_title(title):
+    return clean_str(title)
 
 def yt_dl(video_url):
     ydl_opts = {
         'format': 'bestvideo+bestaudio/best',
-        'outtmpl': 'VideosDirPath/%(title)s.%(ext)s',
+        'outtmpl': f"VideosDirPath/now_video.mp4",
         'merge_output_format': 'mp4',
         'postprocessors': [{
             'key': 'FFmpegVideoConvertor',
