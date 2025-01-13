@@ -4,4 +4,5 @@ myvenv
 __pycache__
 node_modules
 VideosDirPath/*
+StreamersCam/*
 RawVideos/*

@@ -43,7 +43,7 @@ def create_files_data(theme, username):
     else:
         print(f"{path_used} existe déjà.")
 
-def edit_and_post_videos(theme, username, satisfying):
+def edit_and_post_videos(theme, username, satisfying, streamer):
 
     theme_yt = theme.replace(" ", "+")
     publish = False
@@ -65,7 +65,11 @@ def edit_and_post_videos(theme, username, satisfying):
 
                     if satisfying:
                         files = [f for f in os.listdir("SatisfyingVideos") if os.path.isfile(os.path.join("SatisfyingVideos", f))]
-                        edit_satisfaying(f"VideosDirPath/now_video.mp4", f"SatisfyingVideos/{random.choice(files)}")
+                        edit(f"VideosDirPath/now_video.mp4", f"SatisfyingVideos/{random.choice(files)}")
+                        video_to_upload = f"content_create.mp4"
+                    elif streamer:
+                        files = [f for f in os.listdir("StreamersCam/Leagueoflegends") if os.path.isfile(os.path.join("StreamersCam/Leagueoflegends", f))]
+                        edit(f"VideosDirPath/now_video.mp4", f"StreamersCam/Leagueoflegends/{random.choice(files)}")
                         video_to_upload = f"content_create.mp4"
                     else:
                         video_to_upload = f"now_video.mp4"
@@ -89,10 +93,11 @@ def edit_and_post_videos(theme, username, satisfying):
 
 if __name__ == '__main__':
 
-    tiktok.login("crypto_challenger")
+    #tiktok.login("legend")
 
-    theme = "crypto"
-    username = "crypto_challenger"
+    theme = "leagueoflegends"
+    theme_yt = theme.replace(" ", "+")
+    username = "legend"
     
     create_files_data(theme, username)
 
@@ -103,7 +108,8 @@ if __name__ == '__main__':
         time.sleep(1)
 
         if time_now == "00:00:00" or time_now == "6:00:00" or time_now == "11:00:00" or time_now == "17:00:00":
-            refresh_shorts_url(theme, username)
+            #refresh_shorts_url(theme, username, f"https://www.youtube.com/hashtag/{theme_yt}/shorts")
+            refresh_shorts_url(theme, username, f"https://www.youtube.com/results?search_query=%23shorts+%2B+{theme_yt}")
 
         if time_now == "07:00:00" or time_now == "12:00:00" or time_now == "18:00:00":
-            edit_and_post_videos(theme, username, True)
+            edit_and_post_videos(theme, username, False, True)

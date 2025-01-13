@@ -3,10 +3,10 @@ import yt_dlp
 import re
 from utils import *
 
-def refresh_shorts_url(theme, username):
+def refresh_shorts_url(theme, username, url):
     theme_yt = theme.replace(" ", "+")
 
-    response = requests.get(f"https://www.youtube.com/results?search_query=%23shorts+%2B+{theme_yt}")
+    response = requests.get(url)
 
     if response.status_code == 200:
         html_content = response.text
@@ -57,19 +57,21 @@ def yt_dl(video_url):
         print(f"Error : {e}")
         return None
     
-def edit_satisfaying(video1_path, video2_path):
+def edit(video1_path, video2_path):
     clip1 = moviepy.VideoFileClip(video1_path)
     clip2 = moviepy.VideoFileClip(video2_path)
 
-    min_duration = min(clip1.duration, clip2.duration)
+    duration = min(clip1.duration, clip2.duration)
+    clip1 = clip1.subclipped(0, duration)
+    clip2 = clip2.subclipped(0, duration)
 
-    clip1 = clip1.subclipped(0, min_duration)
-    clip2 = clip2.subclipped(0, min_duration)
+    clip1 = clip1.resized(new_size=(720,1100))
+    clip2 = clip2.resized(new_size=(720,420))
+
+    final_clip = moviepy.clips_array([[clip2], 
+                                      [clip1]
+                                    ])
     
-    clip1 = clip1.resized(new_size=(540,1200))
-    clip2 = clip2.resized(new_size=(540,1200))
-
-    final_clip = moviepy.clips_array([[clip1, clip2]])
     final_clip.write_videofile("VideosDirPath/content_create.mp4", codec="libx264")
     
 
